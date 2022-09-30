@@ -8,3 +8,6 @@ Copy and paste the entire file into your own blank html then drag and drop onto 
 
 ## Future Plans
 as support for react and pyscript expands I have a few projects not related to this. If time permits I may add input areas for the values so you can use random or you chosen values.
+
+## Inspiration
+Both Samuel Chan and Traversy Media Youtube channels offered inspiration on this project.
