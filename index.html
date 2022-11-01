@@ -2,59 +2,93 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css">
-    
-    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@4.9.3/dist/js/tabulator.js"></script>
-    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-2.4.2.js"></script>
-    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-widgets-2.4.2.min.js"></script>
-    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-tables-2.4.2.min.js"></script>
-    <script type="text/javascript" src="https://unpkg.com/@holoviz/panel@0.13.0/dist/panel.min.js"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+    <!-- <script defer src="./pyscript.js"></script> -->
     <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
-
-
-    <title>PyScript Proof of Concept</title>
+    
+    <title>PyScript Proof of concept</title>
+    <py-env>
+- altair
+- pandas
+- vega_datasets
+    </py-env>
 </head>
-<body>
-  <main class="text-center w-full mb-8">
-        <py-env>
-    - numpy
-    - pandas
-    - bokeh
-    - panel
-        </py-env>
+<body style="background-color:#f8f8ff">
+    <h1 style="font-size: 2.5em">Exploring IMDB Movies with PyScript Testing</h1>
+    <div id="dashboard"></div>
+    
+    <py-script output="dashboard">
+import altair as alt
+from vega_datasets import data
 
-        <h1>Random Numbers Plot</h1>
-        <div id="plot" class="grid h-screen place-items-center"></div>
+df = data.movies.url
+pts = alt.selection(type="single", encodings=['x'])
 
-    <py-script>
-    import asyncio
+rect = alt.Chart(df).mark_bar().encode(
+    alt.X('IMDB_Rating:Q', bin=True),
+    alt.Y('Rotten_Tomatoes_Rating:Q', bin=True),
+    color=alt.condition(pts, 'Rotten_Tomatoes_Rating:Q', alt.value('lightgray'))
+)
 
-    import panel as pn
-    import numpy as np
-    import pandas as pd
+circ = rect.mark_point().encode(
+    alt.ColorValue('lightgray'),
+    alt.Size(
+        'count()',
+        legend=alt.Legend(title='Number of Movies Selected')
+    )
+).transform_filter(
+    pts
+)
 
-    from bokeh.models import ColumnDataSource
-    from bokeh.plotting import figure
-    from panel.io.pyodide import show
+text = alt.Chart(df).mark_text().encode(
+    y=alt.Y('row_number:O', axis=None),
+).transform_window(
+    row_number='row_number()'
+).transform_filter(
+    pts
+).transform_window(
+    rank='rank(row_number)'
+).transform_filter(
+    alt.datum.rank < 20
+)
 
-    df = pd.DataFrame(np.random.randn(10, 4),  columns=list('ABCD')).cumsum()
-    p = figure(height=450, width=600)
+ratings = text.encode(
+    text='Rotten_Tomatoes_Rating:Q'
+)
+moviename = text.encode(
+    text="Title:N"
+)
 
-    cds = ColumnDataSource(data=ColumnDataSource.from_df(df))
+line = alt.Chart(df).mark_line().encode(
+    x="Major_Genre:N",
+    y="count()"
+)
 
-    p.line('index', 'A', source=cds, line_color='firebrick')
-    p.line('index', 'B', source=cds, line_color='dodgerblue')
-    p.line('index', 'C', source=cds, line_color='goldenrod')
-    p.line('index', 'D', source=cds, line_color='purple')
+bar = alt.Chart(df).mark_bar().encode(
+    x="Major_Genre:N",
+    y="count()"
+).properties(
+    width=700,
+    height=250
+).add_selection(
+    pts
+)
 
-    await show(p, 'plot')
+
+alt.vconcat(
+    (rect + circ | ratings | moviename | line),
+    bar
+).resolve_legend(
+    color="independent",
+    size="independent"
+)
+
+
     </py-script>
-  </main>
+    <H3 style="font-size: 2.5em"> A place to test the python code </H3>
+    <py-repl/>
 
-<py-repl></py-repl>
 </body>
-</html>
